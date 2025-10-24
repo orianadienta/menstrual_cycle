@@ -1,0 +1,112 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Http\Controllers\Controller;
+use Illuminate\Http\Request;
+use App\Models\Cycle;
+use App\Services\PredictionService;
+use Illuminate\Support\Carbon;
+
+class CycleController extends Controller
+{
+    protected $predictionService;
+
+    public function __construct(PredictionService $predictionService)
+    {
+        $this->predictionService = $predictionService;
+    }
+
+    public function index(Request $request)
+    {
+        $cycles = $request->user()->cycles()->get();
+        return response()->json($cycles);
+    }
+
+    public function markPeriod(Request $request, PredictionService $predictionService) 
+    {
+        $request->validate([
+            'start_date' => 'required|date',
+            'end_date' => 'nullable|date|after_or_equal:start_date',
+        ]);
+
+        $user = $request->user();
+        $profile = $user->cycleProfile;
+        $periodDuration = $profile->initial_period_duration ?? 7;
+        $endDate = $request->end_date ?? now()->parse($request->start_date)->addDays($periodDuration - 1);
+
+        $cycle = Cycle::create([
+            'user_id' => $user->id,
+            'start_date' => $request->start_date,
+            'end_date' => $endDate,
+            'period_duration' => Carbon::parse($request->start_date)->diffInDays(Carbon::parse($endDate)) + 1,
+        ]);
+
+        // generate prediksi baru setelah pencatatan menstruasi
+        $newPrediction = $this->predictionService->generatePrediction($user->id);
+
+        return response()->json([
+            'message' => 'Cycle berhasil dicatat',
+            'data' => [
+                'cycle' => $cycle,
+                'next_prediction' => $newPrediction,
+            ],
+        ]);
+    }
+
+    public function updateMarkPeriod(Request $request, Cycle $cycle) 
+    {
+        $request->validate([
+            'date' => 'required|date',
+            'is_menstruating' => 'required|boolean',
+        ]);
+
+        $date = \Carbon\Carbon::parse($request->date);
+
+        // untuk kondisi durasi menstruasi yang lebih lama
+        if ($request->is_menstruating) {
+            if(!$cycle->end_date || $date->greaterThan($cycle->end_date)) {
+                $cycle->end_date = $date;
+                $cycle->period_duration = $cycle->start_date->diffInDays($cycle->end_date) + 1;
+                $cycle->save();
+            }
+        } else{
+            if ($cycle->end_date && $cycle->end_date->equalTo($date)) {
+                $cycle->end_date = $cycle->end_date->copy()->subDay();
+                $cycle->period_duration = $cycle->start_date->diffInDays($cycle->end_date) + 1;
+                $cycle->save();
+                }
+            }
+
+        // generate prediksi baru setelah update
+        $newPrediction = $this->predictionService->generatePrediction($cycle->user_id);
+
+        return response()->json([
+            'message' => 'Catatan berhasil diperbarui',
+            'data' => [
+                'cycle' => $cycle,
+                'next_prediction' => $newPrediction,
+            ],
+        ]);
+    }
+    
+    // public function updateMarkPeriod(Request $request, Cycle $cycle) 
+    // {
+    //     $request->validate([
+    //         'date' => 'required|date',
+    //         'is_menstruating' => 'required|boolean',
+    //     ]);
+
+    //     if ($request->is_menstruating) {
+    //         if(!$cycle->end_date || $request->date > $cycle->end_date) {
+    //             $cycle->end_date = $request->date;
+    //             $cycle->save();
+    //         }
+    //     }
+
+    //     return response()->json([
+    //         'message' => 'Catatan berhasil diperbarui',
+    //         'data' => $cycle,
+    //     ]);
+    // }    
+}
