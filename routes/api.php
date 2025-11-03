@@ -7,6 +7,9 @@ use App\Http\Controllers\HealthProfileController;
 use App\Http\Controllers\CycleController;
 use App\Http\Controllers\FirstPredictionController;
 use App\Http\Controllers\PredictionController;
+use App\Http\Controllers\SymptomLogController;
+use App\Http\Controllers\ReportController;
+use Illuminate\Http\Request;
 
 Route::post('/register', [AuthController::class, 'register'])->name('register');
 Route::post('/login', [AuthController::class, 'login'])->name('login');
@@ -39,4 +42,18 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/cycles/{cycle}/update-day', [CycleController::class, 'updateMarkPeriod']);
 });
 
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/symptom-logs', [SymptomLogController::class, 'storeLog']);
+    Route::get('/symptom-logs', [SymptomLogController::class, 'show']);
+});
+
+Route::middleware('auth:sanctum')->group(function () {
+    // Report - Statistik
+    Route::get('/report/cycle', [ReportController::class, 'getCycleReport']);
+    
+    // History - Terpisah per kategori
+    Route::get('/cycles/cycle-history', [CycleController::class, 'getCycleHistory']);
+
+    Route::get('/symptoms/symptom-history', [SymptomLogController::class, 'getSymptomHistory']);
+});
 

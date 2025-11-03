@@ -11,10 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('symptoms', function (Blueprint $table) {
+        Schema::create('symptom_categories', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('category_id')->constrained('symptom_categories')->onDelete('cascade');
-            $table->string('symptom_name');
+            $table->string('category_name');
             $table->timestamps();
         });
     }
@@ -24,6 +23,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('symptoms');
+        Schema::dropIfExists('symptom_categories');
     }
 };

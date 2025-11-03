@@ -11,7 +11,6 @@ class SymptomLog extends Model
 
     protected $fillable = [
         'user_id',
-        'cycle_id',
         'symptom_id',
         'log_date',
     ];

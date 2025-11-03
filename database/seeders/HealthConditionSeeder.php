@@ -15,6 +15,14 @@ class HealthConditionSeeder extends Seeder
     {
         $conditions = [
             [
+                'condition_name' => 'Polycystic Ovary Syndrome (PCOS)',
+                'description' => 'Gangguan hormonal yang umum pada wanita usia reproduksi, ditandai dengan ovarium yang membesar dan pembentukan kista kecil. Gejala termasuk menstruasi tidak teratur, pertumbuhan rambut berlebih, dan jerawat.'
+            ],
+            [
+                'condition_name' => 'Endometriosis',
+                'description' => 'Kondisi di mana jaringan mirip endometrium tumbuh di luar rahim, menyebabkan nyeri haid berat, kram, dan terkadang perdarahan tidak normal.'
+            ],
+            [
                 'condition_name' => 'Hypothyroidism',
                 'description' => 'Kelenjar tiroid yang kurang aktif dapat memperlambat metabolisme dan mengganggu keseimbangan hormon reproduksi, menyebabkan menstruasi jarang, berat, atau tidak teratur.'
             ],

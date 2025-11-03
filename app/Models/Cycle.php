@@ -13,11 +13,17 @@ class Cycle extends Model
         'user_id',
         'start_date',
         'end_date',
+        'period_duration',
+        'cycle_length',
     ];
 
     protected $casts = [
-        'start_date' => 'date',
-        'end_date' => 'date',
+        'start_date' => 'datetime',
+        'end_date' => 'datetime',
+    ];
+
+    protected $hidden = [
+        'user', // Hide relationship saat serialize
     ];
 
     public function user()

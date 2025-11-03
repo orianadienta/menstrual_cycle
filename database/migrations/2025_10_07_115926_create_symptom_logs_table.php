@@ -14,13 +14,13 @@ return new class extends Migration
         Schema::create('symptom_logs', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
-            $table->foreignId('cycle_id')->constrained('cycles')->onDelete('cascade')->nullable();
+            // $table->foreignId('cycle_id')->constrained('cycles')->onDelete('cascade')->nullable();
             $table->foreignId('symptom_id')->constrained('symptoms')->onDelete('cascade');
             $table->timestamp('log_date');
             $table->timestamps();
 
             $table->index(['user_id', 'log_date']); // Calendar view
-            $table->index('cycle_id'); // Filter per cycle
+            // $table->index('cycle_id'); // Filter per cycle
 
         });
     }

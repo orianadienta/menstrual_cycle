@@ -11,11 +11,16 @@ class Symptom extends Model
 
     protected $fillable = [
         'symptom_name',
-        'category',
+        'category_id',
     ];
 
     public function symptom_logs()
     {
         return $this->hasMany(SymptomLog::class);
+    }
+
+    public function category()
+    {
+        return $this->belongsTo(SymptomCategory::class, 'category_id');
     }
 }

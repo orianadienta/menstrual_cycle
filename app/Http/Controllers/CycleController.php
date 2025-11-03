@@ -89,24 +89,59 @@ class CycleController extends Controller
             ],
         ]);
     }
-    
-    // public function updateMarkPeriod(Request $request, Cycle $cycle) 
-    // {
-    //     $request->validate([
-    //         'date' => 'required|date',
-    //         'is_menstruating' => 'required|boolean',
-    //     ]);
 
-    //     if ($request->is_menstruating) {
-    //         if(!$cycle->end_date || $request->date > $cycle->end_date) {
-    //             $cycle->end_date = $request->date;
-    //             $cycle->save();
-    //         }
-    //     }
 
-    //     return response()->json([
-    //         'message' => 'Catatan berhasil diperbarui',
-    //         'data' => $cycle,
-    //     ]);
-    // }    
+    public function getCycleHistory(Request $request)
+    {
+        $user = $request->user();
+        
+        // Ambil 6 siklus terakhir yang punya cycle_length
+        $cycles = Cycle::where('user_id', $user->id)
+            ->whereNotNull('end_date')
+            ->whereNotNull('cycle_length') // Harus punya cycle length
+            ->orderBy('start_date', 'desc')
+            ->take(6)
+            ->get();
+
+        if ($cycles->isEmpty()) {
+            return response()->json([
+                'message' => 'Belum ada riwayat siklus',
+                'data' => [],
+            ]);
+        }
+
+        // Group by tahun
+        $history = $cycles->groupBy(function($cycle) {
+            return \Carbon\Carbon::parse($cycle->start_date)->year;
+        })->map(function($yearCycles, $year) {
+            $cycleList = $yearCycles->map(function($cycle) {
+                $startDate = \Carbon\Carbon::parse($cycle->start_date);
+                
+                // Hitung next start date berdasarkan cycle length
+                $nextStartDate = $startDate->copy()->addDays($cycle->cycle_length);
+                
+                return [
+                    'id' => $cycle->id,
+                    'display' => $startDate->format('d M') . ' - ' . 
+                                $nextStartDate->format('d M') . 
+                                ' (' . $cycle->cycle_length . ' hari)',
+                    'start_date' => $startDate->format('Y-m-d'),
+                    'next_cycle_date' => $nextStartDate->format('Y-m-d'),
+                    'cycle_length' => $cycle->cycle_length,
+                    'period_duration' => $cycle->period_duration,
+                ];
+            })->values()->all();
+
+            return [
+                'year' => $year,
+                'cycles' => $cycleList,
+                'total_cycles' => count($cycleList),
+            ];
+        })->values()->all();
+
+        return response()->json([
+            'message' => 'Riwayat siklus berhasil diambil',
+            'data' => $history,
+        ]);
+    }
 }

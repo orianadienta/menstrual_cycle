@@ -8,11 +8,14 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Facades\Password;
+use Illuminate\Contracts\Auth\CanResetPassword;
+use Illuminate\Auth\Passwords\CanResetPassword as CanResetPasswordTrait;
 use App\Models\User;
 
 class AuthController extends Controller
 {
-    /**
+    /** disini tambahin email verification
      * Register a new account.
      */
     public function register(Request $request)
@@ -30,10 +33,19 @@ class AuthController extends Controller
                 'password' => Hash::make($validated['password']),
             ]);
 
+            $token = $user->createToken('auth_token')->plainTextToken;
+
             return response()->json([
                 'response_code' => 201,
                 'status'        => 'success',
                 'message'       => 'Successfully registered',
+                'token'      => $token,
+                'needs_onboarding' => true,
+                'user_info'     => [
+                    'id'    => $user->id,
+                    'name'  => $user->name,
+                    'email' => $user->email,
+                ],
             ], 201);
         } catch (ValidationException $e) {
             return response()->json([
@@ -128,6 +140,24 @@ class AuthController extends Controller
                 'message'       => 'Failed to fetch user list',
             ], 500);
         }
+    }
+
+
+    // ini belum berfungsi
+    public function forgotPassword(Request $request)
+    {
+        $request -> validate(['email' => 'required|email']);
+
+        $status = Password::sendResetLink(
+            $request->only('email')
+        );
+
+        return response()->json([
+            'message'=>$status === Password::RESET_LINK_SENT
+                ? 'Reset link sent!'
+                : 'Unable to send reset link.',
+            'status'=>$status,
+        ], $status === Password::RESET_LINK_SENT ? 200 : 400);
     }
 
     /**
