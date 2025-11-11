@@ -23,4 +23,8 @@ class PredictionController extends Controller
         ]);
 
     }
+
 }
+
+
+// ohh, jadi itu prediksi harus ditampilkan semua ya. terus klo ga dibatasin ini bisa? dan ini hasilnya berarti kalau bulannya udah lewat otomatis prediksi sebelumnya masih bisa keliatan? kalau di clue aku liat kalau bulannya udah lewat ya gak muncul lagi nanti prediksinya. cuman yang akan datang aja. tapi aku jadi bingung kalau misalnya telat mentsruasinya sampai prediksinya kelewatan di bulan it masa hlang? berarti prediksinya hilang kalau udha ada data baru aja?

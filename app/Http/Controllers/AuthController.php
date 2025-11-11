@@ -20,6 +20,7 @@ class AuthController extends Controller
      */
     public function register(Request $request)
     {
+
         try {
             $validated = $request->validate([
                 'name'     => 'required|string|min:4',

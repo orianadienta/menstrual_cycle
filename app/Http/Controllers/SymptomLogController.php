@@ -7,9 +7,17 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Carbon;
 use App\Models\SymptomLog;
 use App\Http\Controllers\Controller;
+use App\Services\RecommendationService;
 
 class SymptomLogController extends Controller
 {
+    protected $recommendationService;
+
+    public function __construct(RecommendationService $recommendationService)
+    {
+        $this->recommendationService = $recommendationService;
+    }
+
     public function storeLog(Request $request) {
         $validated = $request->validate([
             'log_date' => 'required|date',
@@ -37,9 +45,13 @@ class SymptomLogController extends Controller
             }
         });
 
+        $this->recommendationService->clearCache($user->id);
+        $recommendations = $this->recommendationService->generateRecommendations($user->id);
+
         return response()->json([
             'success' => true,
             'message' => 'Log saved successfully',
+            // 'recommendations' => $recommendations,
         ]);
     }
 
@@ -49,10 +61,9 @@ class SymptomLogController extends Controller
             'log_date' => 'required|date',
         ]);
 
-        $logs = SymptomLog::with ('symptom_category')
+        $logs = SymptomLog::with('symptom') // pakai relasi yang ada
             ->where('user_id', $request->user()->id)
-            // ->whereDate('log_date', $request->log_date) //ambil dari requset body
-            ->whereDate('log_date', $request->query('log_date')) //ambil dari query string
+            ->whereDate('log_date', $request->query('log_date'))
             ->get();
 
         return response()->json([
@@ -60,6 +71,8 @@ class SymptomLogController extends Controller
             'data' => $logs,
         ]);
     }
+
+
 
     public function getSymptomHistory(Request $request)
     {

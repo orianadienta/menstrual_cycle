@@ -39,28 +39,8 @@ class HealthConditionSeeder extends Seeder
                 'description' => 'Jaringan endometrium tumbuh ke dalam otot rahim, menyebabkan haid sangat nyeri dan perdarahan berat atau lama.'
             ],
             [
-                'condition_name' => 'Endometrial Polyp',
-                'description' => 'Pertumbuhan jaringan di dinding dalam rahim yang dapat menyebabkan perdarahan di luar siklus menstruasi atau menstruasi berat.'
-            ],
-            [
-                'condition_name' => 'Coagulopathy (mis. von Willebrand Disease)',
-                'description' => 'Gangguan pembekuan darah yang menyebabkan perdarahan menstruasi berlebihan dan berkepanjangan, sering muncul sejak menarke.'
-            ],
-            [
-                'condition_name' => 'Ovulatory Dysfunction',
-                'description' => 'Gangguan pelepasan sel telur akibat ketidakseimbangan hormon, stres, penurunan berat badan ekstrem, atau perimenopause, menyebabkan siklus tidak teratur.'
-            ],
-            [
-                'condition_name' => 'Iatrogenic Bleeding',
-                'description' => 'Perdarahan akibat efek samping obat atau alat medis, seperti kontrasepsi hormonal, IUD, antikoagulan, atau antidepresan tertentu.'
-            ],
-            [
                 'condition_name' => 'Perimenopause (Premenopause)',
                 'description' => 'Masa transisi menuju menopause di mana ovulasi menjadi tidak teratur, menyebabkan siklus haid berubah panjang atau pendek, dan volume darah tidak menentu.'
-            ],
-            [
-                'condition_name' => 'Endometriosis',
-                'description' => 'Kondisi di mana jaringan mirip endometrium tumbuh di luar rahim, menyebabkan nyeri haid berat, kram, dan terkadang perdarahan tidak normal.'
             ],
             [
                 'condition_name' => 'Premenstrual Dysphoric Disorder (PMDD)',
@@ -69,10 +49,6 @@ class HealthConditionSeeder extends Seeder
             [
                 'condition_name' => 'Anemia',
                 'description' => 'Kadar hemoglobin rendah akibat kehilangan darah menstruasi berlebih, menyebabkan kelelahan, pusing, dan kulit pucat.'
-            ],
-            [
-                'condition_name' => 'Stress and Psychological Factors',
-                'description' => 'Stres emosional atau gangguan kecemasan dapat mengganggu sumbu hormon reproduksi (HPO axis), menyebabkan ovulasi terganggu dan siklus tidak teratur.'
             ],
         ];
 

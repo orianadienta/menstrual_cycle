@@ -67,37 +67,14 @@ class PredictionService
             'source' => 'auto',
         ]);
     }
+
+    public function getLatestPrediction($userId)
+    {
+        return PredictedCycle::where('user_id', $userId)
+            ->latest('generated_at')
+            ->first();
+        
+        return $prediction;
+    }
 }
 
-
-// public function generatePrediction($userId)
-//     {
-//         $lastCycle = Cycle::where('user_id', $userId)
-//             ->whereNotNull('end_date')
-//             ->latest('end_date')
-//             ->first();
-
-//         if (!$lastCycle) {
-//             return null;
-//         }
-
-//         $cycleLength = $lastCycle->initial_cycle_length ?? 28;
-//         $periodDuration = $lastCycle->initial_period_duration ?? 7;
-
-//         $predictedStart = Carbon::parse($lastCycle->start_date)->addDays($cycleLength);
-//         $predictedEnd = $predictedStart->copy()->addDays($periodDuration - 1);
-//         $ovulationDate = $predictedStart->copy()->subDays(14);
-//         $fertileStart = $ovulationDate->copy()->subDays(5);
-//         $fertileEnd = $ovulationDate->copy();
-
-//         return PredictedCycle::create([
-//             'user_id' => $userId,
-//             'predicted_start_date' => $predictedStart,
-//             'predicted_end_date' => $predictedEnd,
-//             'ovulation_date' => $ovulationDate,
-//             'fertile_window_start' => $fertileStart,
-//             'fertile_window_end' => $fertileEnd,
-//             'generated_at' => now(),
-//             'source' => 'auto',
-//         ]);
-//     }

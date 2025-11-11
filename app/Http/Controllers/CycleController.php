@@ -6,15 +6,18 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Cycle;
 use App\Services\PredictionService;
+use App\Services\RecommendationService;
 use Illuminate\Support\Carbon;
 
 class CycleController extends Controller
 {
     protected $predictionService;
+    protected $recommendationService;
 
-    public function __construct(PredictionService $predictionService)
+    public function __construct(PredictionService $predictionService, RecommendationService $recommendationService)
     {
         $this->predictionService = $predictionService;
+        $this->recommendationService = $recommendationService;
     }
 
     public function index(Request $request)
@@ -45,15 +48,21 @@ class CycleController extends Controller
         // generate prediksi baru setelah pencatatan menstruasi
         $newPrediction = $this->predictionService->generatePrediction($user->id);
 
+        // generate rekomendasi setiap perubahan siklus
+        $this->recommendationService->clearCache($user->id);
+        $recommendations = $this->recommendationService->generateRecommendations($user->id);
+
         return response()->json([
             'message' => 'Cycle berhasil dicatat',
             'data' => [
                 'cycle' => $cycle,
                 'next_prediction' => $newPrediction,
+                // 'recommendations' => $recommendations,
             ],
         ]);
     }
 
+    // update siklus pertanggal atau perhari
     public function updateMarkPeriod(Request $request, Cycle $cycle) 
     {
         $request->validate([
@@ -80,6 +89,10 @@ class CycleController extends Controller
 
         // generate prediksi baru setelah update
         $newPrediction = $this->predictionService->generatePrediction($cycle->user_id);
+
+        // generate ulang rekomendasi kalau update siklus
+        $this->recommendationService->clearCache($cycle->user_id);
+        $recommendations = $this->recommendationService->generateRecommendations($cycle->user_id);
 
         return response()->json([
             'message' => 'Catatan berhasil diperbarui',
