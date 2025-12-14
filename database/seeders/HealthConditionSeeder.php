@@ -15,56 +15,40 @@ class HealthConditionSeeder extends Seeder
     {
         $conditions = [
             [
-                'condition_name' => 'Hypothyroidism',
-                'description' => 'Kelenjar tiroid yang kurang aktif dapat memperlambat metabolisme dan mengganggu keseimbangan hormon reproduksi, menyebabkan menstruasi jarang, berat, atau tidak teratur.'
-            ],
-            [
-                'condition_name' => 'Hyperthyroidism',
-                'description' => 'Kelebihan hormon tiroid mempercepat metabolisme dan dapat menurunkan kadar estrogen, menyebabkan haid menjadi lebih pendek, ringan, atau jarang.'
-            ],
-            [
-                'condition_name' => 'Uterine Fibroids (Leiomyoma)',
-                'description' => 'Tumor jinak pada otot rahim yang dapat menyebabkan menstruasi berat, lama, nyeri panggul, dan perut terasa penuh.'
-            ],
-            [
-                'condition_name' => 'Adenomyosis',
-                'description' => 'Jaringan endometrium tumbuh ke dalam otot rahim, menyebabkan haid sangat nyeri dan perdarahan berat atau lama.'
-            ],
-            [
-                'condition_name' => 'Endometrial Polyp',
-                'description' => 'Pertumbuhan jaringan di dinding dalam rahim yang dapat menyebabkan perdarahan di luar siklus menstruasi atau menstruasi berat.'
-            ],
-            [
-                'condition_name' => 'Coagulopathy (mis. von Willebrand Disease)',
-                'description' => 'Gangguan pembekuan darah yang menyebabkan perdarahan menstruasi berlebihan dan berkepanjangan, sering muncul sejak menarke.'
-            ],
-            [
-                'condition_name' => 'Ovulatory Dysfunction',
-                'description' => 'Gangguan pelepasan sel telur akibat ketidakseimbangan hormon, stres, penurunan berat badan ekstrem, atau perimenopause, menyebabkan siklus tidak teratur.'
-            ],
-            [
-                'condition_name' => 'Iatrogenic Bleeding',
-                'description' => 'Perdarahan akibat efek samping obat atau alat medis, seperti kontrasepsi hormonal, IUD, antikoagulan, atau antidepresan tertentu.'
-            ],
-            [
-                'condition_name' => 'Perimenopause (Premenopause)',
-                'description' => 'Masa transisi menuju menopause di mana ovulasi menjadi tidak teratur, menyebabkan siklus haid berubah panjang atau pendek, dan volume darah tidak menentu.'
+                'condition_name' => 'Polycystic Ovary Syndrome (PCOS)',
+                'description' => 'A common hormonal disorder in women of reproductive age, characterized by enlarged ovaries and the formation of small cysts. Symptoms may include irregular periods, excess hair growth, and acne.',
             ],
             [
                 'condition_name' => 'Endometriosis',
-                'description' => 'Kondisi di mana jaringan mirip endometrium tumbuh di luar rahim, menyebabkan nyeri haid berat, kram, dan terkadang perdarahan tidak normal.'
+                'description' => 'A condition where tissue similar to the endometrium grows outside the uterus, causing severe menstrual pain, cramps, and sometimes abnormal bleeding.',
+            ],
+            [
+                'condition_name' => 'Hypothyroidism',
+                'description' => 'An underactive thyroid gland slows metabolism and disrupts reproductive hormonal balance, leading to infrequent, heavy, or irregular menstruation.',
+            ],
+            [
+                'condition_name' => 'Hyperthyroidism',
+                'description' => 'Excess thyroid hormones increase metabolism and may lower estrogen levels, leading to shorter, lighter, or infrequent periods.',
+            ],
+            [
+                'condition_name' => 'Uterine Fibroids (Leiomyoma)',
+                'description' => 'Benign tumors in the uterine muscle that can cause heavy or prolonged menstruation, pelvic pain, and a feeling of fullness in the abdomen.',
+            ],
+            [
+                'condition_name' => 'Adenomyosis',
+                'description' => 'A condition where endometrial tissue grows into the uterine muscle, causing very painful periods and heavy or prolonged bleeding.',
+            ],
+            [
+                'condition_name' => 'Perimenopause (Premenopause)',
+                'description' => 'The transitional period leading to menopause when ovulation becomes irregular, causing menstrual cycles to become longer, shorter, or inconsistent in flow.',
             ],
             [
                 'condition_name' => 'Premenstrual Dysphoric Disorder (PMDD)',
-                'description' => 'Bentuk berat dari sindrom pramenstruasi (PMS) yang ditandai dengan perubahan mood ekstrem, iritabilitas, dan gejala emosional menjelang haid.'
+                'description' => 'A severe form of premenstrual syndrome (PMS) characterized by extreme mood changes, irritability, and emotional symptoms before menstruation.',
             ],
             [
                 'condition_name' => 'Anemia',
-                'description' => 'Kadar hemoglobin rendah akibat kehilangan darah menstruasi berlebih, menyebabkan kelelahan, pusing, dan kulit pucat.'
-            ],
-            [
-                'condition_name' => 'Stress and Psychological Factors',
-                'description' => 'Stres emosional atau gangguan kecemasan dapat mengganggu sumbu hormon reproduksi (HPO axis), menyebabkan ovulasi terganggu dan siklus tidak teratur.'
+                'description' => 'A condition marked by low hemoglobin levels due to excessive menstrual blood loss, leading to fatigue, dizziness, and pale skin.',
             ],
         ];
 

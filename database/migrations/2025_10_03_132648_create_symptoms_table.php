@@ -13,8 +13,8 @@ return new class extends Migration
     {
         Schema::create('symptoms', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('category_id')->constrained('symptom_categories')->onDelete('cascade');
             $table->string('symptom_name');
-            $table->string('category');
             $table->timestamps();
         });
     }

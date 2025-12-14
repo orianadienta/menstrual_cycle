@@ -1,112 +1,154 @@
 <?php
-
 namespace App\Http\Controllers;
 
-use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Cycle;
+use App\Models\TrackingStatus;
 use App\Services\PredictionService;
+use App\Services\RecommendationService;
 use Illuminate\Support\Carbon;
 
 class CycleController extends Controller
 {
-    protected $predictionService;
-
-    public function __construct(PredictionService $predictionService)
-    {
-        $this->predictionService = $predictionService;
-    }
+    public function __construct(
+        private PredictionService $predictionService,
+        private RecommendationService $recommendationService
+    ) {}
 
     public function index(Request $request)
     {
-        $cycles = $request->user()->cycles()->get();
-        return response()->json($cycles);
+        return response()->json($request->user()->cycles);
     }
 
-    public function markPeriod(Request $request, PredictionService $predictionService) 
+    public function markPeriod(Request $request)
     {
         $request->validate([
-            'start_date' => 'required|date',
-            'end_date' => 'nullable|date|after_or_equal:start_date',
+            'start_date' => 'required|date|before_or_equal:today',
+            'end_date' => 'nullable|date|after_or_equal:start_date|before_or_equal:today',
         ]);
 
         $user = $request->user();
-        $profile = $user->cycleProfile;
-        $periodDuration = $profile->initial_period_duration ?? 7;
-        $endDate = $request->end_date ?? now()->parse($request->start_date)->addDays($periodDuration - 1);
 
+        // Auto-resume if paused
+        $tracked = TrackingStatus::where('user_id', $user->id)->latest()->first();
+        if ($tracked?->status === 'paused') {
+            TrackingStatus::create([
+                'user_id' => $user->id,
+                'status' => 'active',
+                'resumed_at' => now(),
+            ]);
+        }
+
+        // Calculate end date
+        $startDate = Carbon::parse($request->start_date);
+        $periodDuration = $user->cycleProfile?->initial_period_duration ?? 5;
+        $endDate = $request->end_date 
+            ? Carbon::parse($request->end_date)
+            : $startDate->copy()->addDays($periodDuration - 1);
+
+        // Create cycle
         $cycle = Cycle::create([
             'user_id' => $user->id,
-            'start_date' => $request->start_date,
+            'start_date' => $startDate,
             'end_date' => $endDate,
-            'period_duration' => Carbon::parse($request->start_date)->diffInDays(Carbon::parse($endDate)) + 1,
+            'period_duration' => $startDate->diffInDays($endDate) + 1,
         ]);
 
-        // generate prediksi baru setelah pencatatan menstruasi
-        $newPrediction = $this->predictionService->generatePrediction($user->id);
+        // Generate prediction & recommendations
+        $prediction = $this->predictionService->generatePrediction($user->id);
+        $this->recommendationService->clearCache($user->id);
+        $this->recommendationService->generateRecommendations($user->id);
 
         return response()->json([
+            'success' => true,
             'message' => 'Cycle berhasil dicatat',
             'data' => [
                 'cycle' => $cycle,
-                'next_prediction' => $newPrediction,
+                'next_prediction' => $prediction,
             ],
         ]);
     }
 
-    public function updateMarkPeriod(Request $request, Cycle $cycle) 
+    public function updateMarkPeriod(Request $request, Cycle $cycle)
     {
         $request->validate([
-            'date' => 'required|date',
+            'start_date' => 'nullable|date|before_or_equal:today',
+            'end_date' => 'nullable|date|before_or_equal:today',
+            'date' => 'nullable|date|before_or_equal:today',
             'is_menstruating' => 'required|boolean',
         ]);
 
-        $date = \Carbon\Carbon::parse($request->date);
-
-        // untuk kondisi durasi menstruasi yang lebih lama
         if ($request->is_menstruating) {
-            if(!$cycle->end_date || $date->greaterThan($cycle->end_date)) {
-                $cycle->end_date = $date;
-                $cycle->period_duration = $cycle->start_date->diffInDays($cycle->end_date) + 1;
-                $cycle->save();
-            }
-        } else{
-            if ($cycle->end_date && $cycle->end_date->equalTo($date)) {
-                $cycle->end_date = $cycle->end_date->copy()->subDay();
-                $cycle->period_duration = $cycle->start_date->diffInDays($cycle->end_date) + 1;
-                $cycle->save();
-                }
+            $startDate = $request->start_date 
+                ? Carbon::parse($request->start_date)
+                : Carbon::parse($cycle->start_date);
+
+            $endDate = $request->end_date 
+                ? Carbon::parse($request->end_date)
+                : ($request->date 
+                    ? Carbon::parse($request->date)
+                    : $startDate->copy()->addDays($cycle->user->cycleProfile?->initial_period_duration ?? 5 - 1));
+
+            // Normalize dates
+            if ($endDate->isBefore($startDate)) {
+                [$startDate, $endDate] = [$endDate, $startDate];
             }
 
-        // generate prediksi baru setelah update
-        $newPrediction = $this->predictionService->generatePrediction($cycle->user_id);
+            $cycle->update([
+                'start_date' => $startDate,
+                'end_date' => $endDate,
+                'period_duration' => $startDate->diffInDays($endDate) + 1,
+            ]);
+        }
+
+        // Generate prediction & recommendations
+        $prediction = $this->predictionService->generatePrediction($cycle->user_id);
+        $this->recommendationService->clearCache($cycle->user_id);
+        $this->recommendationService->generateRecommendations($cycle->user_id);
 
         return response()->json([
+            'success' => true,
             'message' => 'Catatan berhasil diperbarui',
             'data' => [
                 'cycle' => $cycle,
-                'next_prediction' => $newPrediction,
+                'next_prediction' => $prediction,
             ],
         ]);
     }
-    
-    // public function updateMarkPeriod(Request $request, Cycle $cycle) 
-    // {
-    //     $request->validate([
-    //         'date' => 'required|date',
-    //         'is_menstruating' => 'required|boolean',
-    //     ]);
 
-    //     if ($request->is_menstruating) {
-    //         if(!$cycle->end_date || $request->date > $cycle->end_date) {
-    //             $cycle->end_date = $request->date;
-    //             $cycle->save();
-    //         }
-    //     }
+    public function getCycleHistory(Request $request)
+    {
+        $cycles = Cycle::where('user_id', $request->user()->id)
+            ->whereNotNull('end_date')
+            ->orderBy('start_date', 'desc')
+            ->take(6)
+            ->get()
+            ->groupBy(fn($c) => Carbon::parse($c->start_date)->year);
 
-    //     return response()->json([
-    //         'message' => 'Catatan berhasil diperbarui',
-    //         'data' => $cycle,
-    //     ]);
-    // }    
+        if ($cycles->isEmpty()) {
+            return response()->json([
+                'message' => 'Belum ada riwayat siklus',
+                'data' => [],
+            ]);
+        }
+
+        $history = $cycles->map(fn($cycles, $year) => [
+            'year' => $year,
+            'cycles' => $cycles->map(fn($c) => [
+                'id' => $c->id,
+                'display' => Carbon::parse($c->start_date)->format('d M') . ' - ' .
+                    Carbon::parse($c->start_date)->addDays($c->cycle_length ?? 28)->format('d M') .
+                    ' (' . ($c->cycle_length ?? 28) . ' hari)',
+                'start_date' => $c->start_date,
+                'cycle_length' => $c->cycle_length ?? 28,
+                'period_duration' => $c->period_duration,
+            ])->values(),
+            'total_cycles' => $cycles->count(),
+        ])->values();
+
+        return response()->json([
+            'message' => 'Riwayat siklus berhasil diambil',
+            'data' => $history,
+        ]);
+    }
 }

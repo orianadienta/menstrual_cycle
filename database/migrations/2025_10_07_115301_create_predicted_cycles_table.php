@@ -19,6 +19,8 @@ return new class extends Migration
             $table->date('fertile_window_start')->nullable();
             $table->date('fertile_window_end')-> nullable();
             $table->date('ovulation_date')-> nullable();
+            $table->integer('cycle_length')->nullable()->after('fertile_window_end');
+            $table->integer('period_duration')->nullable()->after('cycle_length');
             $table->timestamp('generated_at')->useCurrentOnUpdate();
             $table->timestamps();
 
