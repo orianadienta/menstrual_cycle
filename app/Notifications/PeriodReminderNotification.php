@@ -60,7 +60,7 @@ class PeriodReminderNotification extends Notification implements ShouldQueue
             'predicted_date' => $predictedDate->toDateString(),
         ]);
 
-        // ✅ FIXED: Removed invalid 'priority' field from android.notification
+        // Removed invalid 'priority' field from android.notification
         return (new FcmMessage(notification: new FcmNotification(
             title: 'Pengingat Menstruasi',
             body: 'Hari ini Anda diperkirakan menstruasi. Jangan lupa catat siklusmu!',
@@ -76,9 +76,8 @@ class PeriodReminderNotification extends Notification implements ShouldQueue
                     'color' => '#FF1493',
                     'sound' => 'default',
                     'channel_id' => 'period_reminders',
-                    // ❌ REMOVED: 'priority' is not valid here
                 ],
-                'priority' => 'high', // ✅ MOVED HERE: priority goes in android root, not notification
+                'priority' => 'high', // priority goes in android root, not notification
                 'fcm_options' => [
                     'analytics_label' => 'period_reminder',
                 ],
