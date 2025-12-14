@@ -5,171 +5,171 @@ namespace App\Constants;
 class RecommendationContent
 {
     const ONBOARDING = [
-        'title' => 'Mulai Tracking',
-        'content' => 'Catat minimal 3 siklus agar rekomendasi lebih akurat.',
-        'category' => 'edukasi',
+        'title' => 'Start Tracking',
+        'content' => 'Track at least 3 cycles for more accurate recommendations.',
+        'category' => 'education',
         'priority' => 'low',
     ];
 
     const HEALTHY_CYCLE = [
-        'title' => 'Siklus Sehat! 🎉',
-        'content' => 'Siklus kamu berada dalam rentang normal (24–38 hari). Pertahankan pola hidup sehat, ya!',
-        'category' => 'preventif',
+        'title' => 'Healthy Cycle! 🎉',
+        'content' => 'Your cycle is within the normal range (24–38 days). Keep maintaining a healthy lifestyle!',
+        'category' => 'preventive',
         'priority' => 'low',
     ];
 
     const HEALTHY_LIFESTYLE = [
-        'title' => 'Jaga Kesehatan',
-        'content' => 'Konsumsi makanan bergizi, olahraga rutin, dan tidur cukup 7–8 jam per hari.',
-        'category' => 'preventif',
+        'title' => 'Maintain Your Health',
+        'content' => 'Eat nutritious food, exercise regularly, and get 7–8 hours of sleep daily.',
+        'category' => 'preventive',
         'priority' => 'low',
     ];
 
     const TRACK_SYMPTOMS_PROMPT = [
-        'title' => 'Catat Gejala',
-        'content' => 'Tracking gejala membantu deteksi perubahan hormon lebih awal.',
-        'category' => 'edukasi',
+        'title' => 'Track Symptoms',
+        'content' => 'Symptom tracking helps detect hormonal changes earlier.',
+        'category' => 'education',
         'priority' => 'low',
     ];
 
     const SYMPTOM_GENERAL = [
-        'title' => 'Kelola Gejala',
-        'content' => 'Siklus normal, tapi ada gejala ringan. Catat polanya untuk evaluasi lebih baik.',
-        'category' => 'kesehatan',
+        'title' => 'Manage Symptoms',
+        'content' => 'Your cycle is normal, but there are mild symptoms. Track the patterns for better evaluation.',
+        'category' => 'health',
         'priority' => 'medium',
     ];
 
     const SYMPTOM_PAIN = [
-        'title' => 'Manajemen Nyeri',
-        'content' => 'Gunakan kompres hangat, stretching ringan, dan istirahat cukup untuk bantu meredakan nyeri.',
-        'category' => 'kesehatan',
+        'title' => 'Pain Management',
+        'content' => 'Use warm compresses, light stretching, and adequate rest to relieve discomfort.',
+        'category' => 'health',
         'priority' => 'medium',
     ];
 
     const SYMPTOM_MOOD = [
-        'title' => 'Kesehatan Mental',
-        'content' => 'Perubahan mood adalah hal wajar. Coba journaling atau meditasi untuk menstabilkan emosi.',
-        'category' => 'kesehatan',
+        'title' => 'Mental Well-being',
+        'content' => 'Mood changes are normal. Try journaling or meditation to stabilize emotions.',
+        'category' => 'health',
         'priority' => 'low',
     ];
 
     const SYMPTOM_SLEEP = [
-        'title' => 'Tidur Berkualitas',
-        'content' => 'Tidur cukup dan hindari kafein 6 jam sebelum tidur untuk bantu ritme hormon tetap stabil.',
-        'category' => 'kesehatan',
+        'title' => 'Quality Sleep',
+        'content' => 'Get enough rest and avoid caffeine 6 hours before bedtime to support hormonal balance.',
+        'category' => 'health',
         'priority' => 'low',
     ];
 
     const IRREGULAR_ALERT = [
-        'title' => '⚠️ Siklus Tidak Teratur',
-        'content' => 'Siklus di luar rentang 24–38 hari. Coba pantau pola tidur dan stres.',
-        'category' => 'kesehatan',
+        'title' => '⚠️ Irregular Cycle',
+        'content' => 'Your cycle is outside the 24–38 day range. Try monitoring sleep and stress patterns.',
+        'category' => 'health',
         'priority' => 'high',
     ];
 
     const IRREGULAR_LIFESTYLE = [
-        'title' => 'Evaluasi Gaya Hidup',
-        'content' => 'Perhatikan pola makan, stres, dan durasi tidur untuk bantu stabilkan siklus.',
-        'category' => 'kesehatan',
+        'title' => 'Lifestyle Evaluation',
+        'content' => 'Pay attention to diet, stress levels, and sleep duration to help stabilize your cycle.',
+        'category' => 'health',
         'priority' => 'high',
     ];
 
     const IRREGULAR_URGENT = [
-        'title' => '🚨 Perlu Perhatian',
-        'content' => 'Siklus tidak teratur dengan gejala berat. Pertimbangkan konsultasi dokter kandungan.',
-        'category' => 'kesehatan',
+        'title' => '🚨 Needs Attention',
+        'content' => 'Irregular cycle with severe symptoms. Consider consulting an OB-GYN.',
+        'category' => 'health',
         'priority' => 'urgent',
     ];
 
     const IRREGULAR_MEDICAL_ADVICE = [
-        'title' => 'Saran Medis',
-        'content' => 'Jika siklus tidak teratur lebih dari 3 bulan, lakukan pemeriksaan ke dokter.',
-        'category' => 'kesehatan',
+        'title' => 'Medical Advice',
+        'content' => 'If your cycle is irregular for more than 3 months, consider getting a medical check-up.',
+        'category' => 'health',
         'priority' => 'medium',
     ];
 
     const CONSULTATION_PREP = [
-        'title' => 'Persiapan Konsultasi',
-        'content' => 'Catat durasi siklus, gejala, dan riwayat keluarga untuk membantu dokter menganalisis.',
-        'category' => 'edukasi',
+        'title' => 'Consultation Preparation',
+        'content' => 'Record cycle duration, symptoms, and family history to help your doctor analyze your condition.',
+        'category' => 'education',
         'priority' => 'medium',
     ];
 
     const CONDITION_MONITORING = [
-        'title' => 'Monitor Kesehatan',
-        'content' => 'Lakukan pemeriksaan rutin sesuai anjuran dokter dan pantau gejala setiap bulan.',
-        'category' => 'kesehatan',
+        'title' => 'Health Monitoring',
+        'content' => 'Follow routine check-ups as advised and monitor symptoms every month.',
+        'category' => 'health',
         'priority' => 'medium',
     ];
 
     const CONDITIONS = [
         'Polycystic Ovary Syndrome (PCOS)' => [
-            'title' => 'Manajemen PCOS',
-            'content' => 'Fokus pada pola makan rendah indeks glikemik, olahraga 150 menit/minggu, dan jaga berat badan ideal untuk seimbangkan hormon.',
-            'category' => 'kesehatan',
+            'title' => 'PCOS Management',
+            'content' => 'Focus on low-GI foods, exercise 150 minutes/week, and maintain a healthy weight to balance hormones.',
+            'category' => 'health',
             'priority' => 'medium',
         ],
 
         'Endometriosis' => [
-            'title' => 'Manajemen Endometriosis',
-            'content' => 'Kurangi makanan pemicu inflamasi, kelola stres, dan konsultasi dokter bila nyeri berat.',
-            'category' => 'kesehatan',
+            'title' => 'Endometriosis Management',
+            'content' => 'Reduce inflammatory foods, manage stress, and consult a doctor if the pain is severe.',
+            'category' => 'health',
             'priority' => 'medium',
         ],
 
         'Hypothyroidism' => [
-            'title' => 'Monitor Hipotiroid',
-            'content' => 'Minum obat sesuai resep dokter dan periksa TSH setiap 6–12 bulan untuk menjaga keseimbangan hormon.',
-            'category' => 'kesehatan',
+            'title' => 'Monitor Hypothyroidism',
+            'content' => 'Take medication as prescribed and check TSH levels every 6–12 months to maintain hormonal balance.',
+            'category' => 'health',
             'priority' => 'medium',
         ],
 
         'Hyperthyroidism' => [
-            'title' => 'Perhatikan HiperTiroid',
-            'content' => 'Ikuti terapi dokter dan hindari konsumsi yodium berlebih. Pantau perubahan siklus.',
-            'category' => 'kesehatan',
+            'title' => 'Monitor Hyperthyroidism',
+            'content' => 'Follow your doctor’s therapy plan and avoid excessive iodine intake. Monitor cycle changes.',
+            'category' => 'health',
             'priority' => 'medium',
         ],
 
         'Uterine Fibroids (Leiomyoma)' => [
-            'title' => 'Pantau Mioma Uteri',
-            'content' => 'Catat volume perdarahan dan durasi haid. Jika darah keluar banyak atau sering pusing, konsultasi dokter.',
-            'category' => 'kesehatan',
+            'title' => 'Monitor Uterine Fibroids',
+            'content' => 'Track bleeding volume and menstrual duration. If bleeding is heavy or causes dizziness, consult a doctor.',
+            'category' => 'health',
             'priority' => 'medium',
         ],
 
         'Adenomyosis' => [
-            'title' => 'Atasi Nyeri Adenomiosis',
-            'content' => 'Gunakan kompres hangat, olahraga ringan, dan istirahat cukup. Jika nyeri berat, segera konsultasi.',
-            'category' => 'kesehatan',
+            'title' => 'Manage Adenomyosis Pain',
+            'content' => 'Use warm compresses, light exercise, and proper rest. Consult a doctor if the pain is severe.',
+            'category' => 'health',
             'priority' => 'medium',
         ],
 
         'Perimenopause (Premenopause)' => [
-            'title' => 'Masa Perimenopause',
-            'content' => 'Perubahan siklus bisa terjadi. Jaga gaya hidup sehat, tidur cukup, dan catat gejala untuk pantauan.',
-            'category' => 'edukasi',
+            'title' => 'Perimenopause Phase',
+            'content' => 'Cycle changes may occur. Maintain a healthy lifestyle, get enough sleep, and track symptoms regularly.',
+            'category' => 'education',
             'priority' => 'low',
         ],
 
         'Premenstrual Dysphoric Disorder (PMDD)' => [
-            'title' => 'Kelola PMDD',
-            'content' => 'Fokus pada kesehatan mental, olahraga rutin, hindari kafein, dan pertimbangkan konseling jika mood swing berat.',
-            'category' => 'kesehatan',
+            'title' => 'Manage PMDD',
+            'content' => 'Focus on mental health, exercise regularly, avoid caffeine, and consider counseling if mood swings are severe.',
+            'category' => 'health',
             'priority' => 'high',
         ],
 
         'Anemia' => [
-            'title' => 'Cegah & Atasi Anemia',
-            'content' => 'Konsumsi makanan kaya zat besi dan vitamin C. Jika lemas terus, konsultasikan pemeriksaan darah.',
-            'category' => 'kesehatan',
+            'title' => 'Prevent & Manage Anemia',
+            'content' => 'Consume iron-rich foods and vitamin C. If fatigue persists, consider a blood test.',
+            'category' => 'health',
             'priority' => 'medium',
         ],
     ];
 
     const SYMPTOM_CATEGORIES = [
-        'Nyeri' => self::SYMPTOM_PAIN,
-        'Perasaan' => self::SYMPTOM_MOOD,
-        'Kualitas Tidur' => self::SYMPTOM_SLEEP,
+        'Pain' => self::SYMPTOM_PAIN,
+        'Mood' => self::SYMPTOM_MOOD,
+        'Sleep Quality' => self::SYMPTOM_SLEEP,
     ];
 }

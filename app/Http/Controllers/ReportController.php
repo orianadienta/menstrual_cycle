@@ -9,53 +9,48 @@ class ReportController extends Controller
 {
     /**
      * Get laporan statistik siklus menstruasi
+     * 
+     * @deprecated Gunakan getDashboardReport() sebagai gantinya
      */
     public function getCycleReport(Request $request)
     {
         $user = $request->user();
-        
-        // Instantiate service manually (bypass DI issue)
         $reportService = new CycleReportService();
         $report = $reportService->generateReport($user->id);
 
-        if ($report['status'] === 'insufficient_data') {
+        if ($report['status'] !== 'success') {
             return response()->json([
-                'message' => $report['message'],
+                'status' => $report['status'],
+                'message' => $report['message'] ?? 'Gagal membuat laporan',
                 'data' => $report,
             ], 400);
         }
 
         return response()->json([
+            'status' => 'success',
             'message' => 'Laporan siklus berhasil dibuat',
             'data' => $report,
         ]);
     }
+
+    public function getDashboardReport(Request $request)
+    {
+        $user = $request->user();
+        $reportService = new CycleReportService();
+        $report = $reportService->generateDashboardReport($user->id);
+
+        if ($report['status'] !== 'success') {
+            return response()->json([
+                'status' => $report['status'],
+                'message' => $report['message'] ?? 'Gagal membuat laporan',
+                'data' => $report,
+            ], 400);
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Dashboard report berhasil dibuat',
+            'data' => $report,
+        ]);
+    }
 }
-
-// public function report(Request $request)
-    // {
-    //     $user = $request->user();
-    //     $startDate = now()->subMonths(3)->startOfMonth();
-    //     $endDate = now()->endOfMonth();
-
-    //     $logs = SymptomLog::with('symptom.category')
-    //         ->where('user_id', $user->id)
-    //         ->whereBetween('log_date', [$startDate, $endDate])
-    //         ->get();
-
-    //     // ringkasan per kategori
-    //     $summary = $logs->groupBy(fn($log) => $log->symptom->category->name)
-    //         ->map(fn($group) => $group->groupBy('symptom.symptom_name')->map->count());
-
-    //     return response()->json([
-    //         'success' => true,
-    //         'periode' => [
-    //             'start' => $startDate->toDateString(),
-    //             'end' => $endDate->toDateString(),
-    //         ],
-    //         'summary' => $summary
-    //     ]);
-
-    // ->whereBetween('log_date', [now()->subMonths(3), now()])
-
-    // }

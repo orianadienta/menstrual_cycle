@@ -58,5 +58,24 @@ class CycleProfileController extends Controller
             ]
         ], 201);
     }
+
+    public function show(Request $request)
+    {
+        $userId = $request->user()->id;
+        
+        $profile = CycleProfile::where('user_id', $userId)->first();
+        
+        if (!$profile) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Cycle profile not found',
+            ], 404);
+        }
+        
+        return response()->json([
+            'success' => true,
+            'data' => $profile,
+        ]);
+    }
 }
 

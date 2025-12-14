@@ -14,13 +14,37 @@ class SymptomSeeder extends Seeder
     public function run()
     {
         $categories = [
-            'Perasaan' => ['Bahagia', 'Sedih', 'Sensitif', 'Marah', 'Semangat', 'Cemas', 'Perubahan suasana hati'],
-            'Nyeri' => ['Tidak nyeri', 'Kram', 'Ovulasi', 'Nyeri payudara', 'Sakit kepala', 'Migrain', 'Punggung bawah'],
-            'Kualitas Tidur' => ['Sulit tidur', 'Bangun merasa segar', 'Bangun merasa lelah', 'Tidur nyenyak'],
+            'Mood' => [
+                'Happy',
+                'Sad',
+                'Sensitive',
+                'Angry',
+                'Energetic',
+                'Anxious',
+                'Mood swings',
+            ],
+
+            'Pain' => [
+                'No pain',
+                'Cramps',
+                'Ovulation pain',
+                'Breast tenderness',
+                'Headache',
+                'Migraine',
+                'Lower back pain',
+            ],
+
+            'Sleep Quality' => [
+                'Difficulty sleeping',
+                'Wake up refreshed',
+                'Wake up tired',
+                'Deep sleep',
+            ],
         ];
 
         foreach ($categories as $categoryName => $symptoms) {
             $category = SymptomCategory::create(['category_name' => $categoryName]);
+
             foreach ($symptoms as $symptomName) {
                 Symptom::create([
                     'category_id' => $category->id,

@@ -6,9 +6,11 @@ use App\Models\Cycle;
 use App\Models\SymptomLog;
 use App\Models\UserHealthCondition;
 use App\Models\Recommendations;
+use App\Models\TrackingStatus;
 use App\Constants\RecommendationContent;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 
 class RecommendationService
 {
@@ -16,36 +18,79 @@ class RecommendationService
     const Figo_cycle_max = 38;
     const Figo_variation_max = 9;
 
-    // generate rekom pakai cache
+    const CACHE_DURATION = 3600; // 1 hour
+
+    // FIX: Generate rekom pakai cache dengan logic yang benar
     public function generateRecommendations($userId)
     {
         $cacheKey = "recommendations_user_{$userId}";
 
-        return Cache::remember($cacheKey, 3600, function() use ($userId){
-            $analysis = $this->analyzeUserCondition($userId);
-            $recommendations = $this->buildRecommendations($analysis);
+        // Check cache dulu - kalau ada, return langsung
+        if (Cache::has($cacheKey)) {
+            $cached = Cache::get($cacheKey);
+            Log::info("Recommendations dari cache untuk user {$userId}");
+            return $cached;
+        }
 
-            $this->saveRecommendations($userId, $recommendations);
-            return $recommendations;
-        });
+        // Generate baru
+        $analysis = $this->analyzeUserCondition($userId);
+        $recommendations = $this->buildRecommendations($analysis);
+
+        // Save ke database
+        $this->saveRecommendations($userId, $recommendations);
+
+        // Cache selama 1 jam
+        Cache::put($cacheKey, $recommendations, now()->addSeconds(self::CACHE_DURATION));
+        
+        Log::info("Recommendations di-generate & di-cache untuk user {$userId}, total: " . count($recommendations));
+
+        return $recommendations;
     }
 
     private function analyzeUserCondition($userId)
     {
-        $cycles = Cycle::where('user_id', $userId)
-            ->whereNotNull('end_date')
-            ->orderBy('start_date', 'desc')
-            ->take(6)
-            ->get();
+        $trackingStatus = TrackingStatus::where('user_id', $userId)
+            ->latest()
+            ->first();
 
+        // CHECK: Kalau paused, return kondisi khusus
+        if ($trackingStatus && $trackingStatus->status === 'paused') {
+            return [
+                'cycles' => collect([]),
+                'cycles_count' => 0,
+                'cycle_status' => 'paused',
+                'pause_reason' => $trackingStatus->pause_reason,
+                'has_symptoms' => false,
+                'symptoms' => collect([]),
+                'has_conditions' => false,
+                'conditions' => collect([]),
+            ];
+        }
+
+        // Query cycles
+        $query = Cycle::where('user_id', $userId)
+            ->whereNotNull('end_date')
+            ->orderBy('start_date', 'desc');
+        
+        // LOGIC: Kalau ada resume, HANYA ambil cycle setelah resume
+        if ($trackingStatus && $trackingStatus->resumed_at) {
+            $query->where('start_date', '>=', $trackingStatus->resumed_at);
+        }
+        elseif ($trackingStatus && $trackingStatus->paused_at) {
+            $query->where('start_date', '<', $trackingStatus->paused_at);
+        }
+        
+        $cycles = $query->take(6)->get();
+
+        // Symptoms dari 1 bulan terakhir
         $symptoms = SymptomLog::with('symptom.category')
             ->where('user_id', $userId)
             ->where('log_date', '>=', Carbon::now()->subMonths(1))
             ->get();
 
         $conditions = UserHealthCondition::with('healthCondition')
-        ->where('user_id', $userId)
-        ->get();
+            ->where('user_id', $userId)
+            ->get();
 
         return [
             'cycles' => $cycles,
@@ -55,48 +100,9 @@ class RecommendationService
             'symptoms' => $symptoms,
             'has_conditions' => $conditions->isNotEmpty(),
             'conditions' => $conditions,
+            'is_post_resume' => $trackingStatus && $trackingStatus->resumed_at ? true : false,
         ];
     }
-
-
-    // private function analyzeUserCondition($userId)
-    // {
-    //     $cycles = Cycle::where('user_id', $userId)
-    //         ->whereNotNull('end_date')
-    //         ->orderBy('start_date', 'desc')
-    //         ->take(6)
-    //         ->get();
-
-    //     // 🔹 Ambil gejala dari bulan terbaru aja
-    //     $latestSymptomDate = SymptomLog::where('user_id', $userId)->max('log_date');
-    //     $symptoms = collect();
-
-    //     if ($latestSymptomDate) {
-    //         $latestMonth = Carbon::parse($latestSymptomDate)->month;
-    //         $latestYear = Carbon::parse($latestSymptomDate)->year;
-
-    //         $symptoms = SymptomLog::with('symptom.category')
-    //             ->where('user_id', $userId)
-    //             ->whereMonth('log_date', $latestMonth)
-    //             ->whereYear('log_date', $latestYear)
-    //             ->get();
-    //     }
-
-    //     $conditions = UserHealthCondition::with('healthCondition')
-    //         ->where('user_id', $userId)
-    //         ->get();
-
-    //     return [
-    //         'cycles' => $cycles,
-    //         'cycles_count' => $cycles->count(),
-    //         'cycle_status' => $this->getCycleStatus($cycles),
-    //         'has_symptoms' => $symptoms->isNotEmpty(),
-    //         'symptoms' => $symptoms,
-    //         'has_conditions' => $conditions->isNotEmpty(),
-    //         'conditions' => $conditions,
-    //     ];
-    // }
-
 
     private function getCycleStatus($cycles)
     {
@@ -135,8 +141,6 @@ class RecommendationService
         return sqrt($variance);
     }
 
-
-    // build rekomendasi berdasarkan kondisi user
     private function buildRecommendations($analysis)
     {
         $recommendations = [];
@@ -144,11 +148,29 @@ class RecommendationService
         $cycleStatus = $analysis['cycle_status'];
         $hasSymptoms = $analysis['has_symptoms'];
         $hasConditions = $analysis['has_conditions'];
+        $isPostResume = $analysis['is_post_resume'] ?? false;
+
+        // Post-resume dengan data kurang
+        if ($isPostResume && $analysis['cycles_count'] < 3) {
+            $recommendations[] = [
+                'title' => 'Mulai Tracking Kembali',
+                'content' => 'Catat minimal 3 siklus menstruasi untuk mendapatkan prediksi dan laporan yang akurat.',
+                'category' => 'tracking',
+                'priority' => 'high',
+            ];
+            return $recommendations;
+        }
+
+        // Handle paused status
+        if ($cycleStatus === 'paused') {
+            $recommendations[] = $this->getPausedRecommendation($analysis['pause_reason']);
+            return $recommendations;
+        }
 
         // === KONDISI 1: Insufficient Data (< 3 cycles) ===
-        if ($cycleStatus === 'insufficient') {
+        if ($cycleStatus === 'insufficient_data') {
             $recommendations[] = RecommendationContent::ONBOARDING;
-            return $recommendations; // Early return
+            return $recommendations;
         }
 
         // === KONDISI 2: Sehat (Regular + No Symptoms + No Conditions) ===
@@ -162,26 +184,20 @@ class RecommendationService
         // === KONDISI 3: Regular Cycle + Has Symptoms ===
         if ($cycleStatus === 'regular' && $hasSymptoms) {
             $recommendations[] = RecommendationContent::SYMPTOM_GENERAL;
-            
-            // Tambah rekomendasi per kategori symptom
             $this->addSymptomRecommendations($analysis['symptoms'], $recommendations);
         }
 
         // === KONDISI 4: Has Health Conditions ===
         if ($hasConditions) {
             $recommendations[] = RecommendationContent::CONDITION_MONITORING;
-            
-            // Tambah rekomendasi per kondisi kesehatan
             $this->addConditionRecommendations($analysis['conditions'], $recommendations);
         }
 
         // === KONDISI 5: Irregular Cycle (PRIORITAS TINGGI!) ===
         if ($cycleStatus === 'irregular') {
-            // Alert utama
             $recommendations[] = RecommendationContent::IRREGULAR_ALERT;
             $recommendations[] = RecommendationContent::IRREGULAR_LIFESTYLE;
             
-            // Kalau ada symptoms juga = URGENT
             if ($hasSymptoms) {
                 $recommendations[] = RecommendationContent::IRREGULAR_URGENT;
                 $recommendations[] = RecommendationContent::CONSULTATION_PREP;
@@ -193,9 +209,6 @@ class RecommendationService
         return $recommendations;
     }
 
-    /**
-     * Tambah rekomendasi spesifik per kategori symptom
-     */
     private function addSymptomRecommendations($symptoms, &$recommendations)
     {
         $categories = $symptoms->pluck('symptom.category.category_name')->unique();
@@ -207,9 +220,6 @@ class RecommendationService
         }
     }
 
-    /**
-     * Tambah rekomendasi spesifik per health condition
-     */
     private function addConditionRecommendations($conditions, &$recommendations)
     {
         foreach ($conditions as $userCondition) {
@@ -221,24 +231,21 @@ class RecommendationService
         }
     }
 
-    /**
-     * Save recommendations ke database
-     */
     private function saveRecommendations($userId, $recommendations)
     {
-        // Hapus recommendations lama (> 7 hari)
+        // Hapus recommendations lama (> 3 hari) untuk prevent accumulation
         Recommendations::where('user_id', $userId)
-            ->where('created_at', '<', Carbon::now()->subDays(7))
+            ->where('created_at', '<', Carbon::now()->subDays(3))
             ->delete();
 
         // Save recommendations baru (hindari duplikat)
         foreach ($recommendations as $rec) {
-            // Check apakah sudah ada recommendation yang sama dalam 3 hari terakhir
+            // Check apakah sudah ada recommendation yang sama dalam 24 jam terakhir
             $exists = Recommendations::where('user_id', $userId)
+                ->where('title', $rec['title'])
                 ->where('category', $rec['category'])
                 ->where('priority', $rec['priority'])
-                ->where('title', $rec['title'])
-                ->where('created_at', '>', Carbon::now()->subDays(3))
+                ->where('created_at', '>', Carbon::now()->subDay())
                 ->exists();
             
             if (!$exists) {
@@ -253,18 +260,13 @@ class RecommendationService
         }
     }
 
-    /**
-     * Clear cache (panggil saat ada perubahan data)
-     */
     public function clearCache($userId)
     {
         $cacheKey = "recommendations_user_{$userId}";
         Cache::forget($cacheKey);
+        Log::info("Cache cleared untuk user {$userId}");
     }
 
-    /**
-     * Get active recommendations untuk display di home
-     */
     public function getActiveRecommendations($userId, $limit = 5)
     {
         return Recommendations::where('user_id', $userId)
@@ -274,9 +276,6 @@ class RecommendationService
             ->get();
     }
 
-    /**
-     * Get recommendations by priority (untuk filter)
-     */
     public function getRecommendationsByPriority($userId, $priority)
     {
         return Recommendations::where('user_id', $userId)
@@ -285,14 +284,29 @@ class RecommendationService
             ->get();
     }
 
-    /**
-     * Get recommendations by category (untuk filter)
-     */
     public function getRecommendationsByCategory($userId, $category)
     {
         return Recommendations::where('user_id', $userId)
             ->where('category', $category)
             ->orderBy('created_at', 'desc')
             ->get();
+    }
+
+    private function getPausedRecommendation($reason)
+    {
+        $content = match($reason) {
+            'pregnancy' => 'Tracking dijeda selama kehamilan. Aktifkan kembali setelah menstruasi kembali normal pasca melahirkan.',
+            'breastfeeding' => 'Tracking dijeda selama menyusui. Menstruasi mungkin tidak teratur saat menyusui.',
+            'menopause' => 'Tracking dijeda. Konsultasikan dengan dokter mengenai perubahan hormonal.',
+            'medical' => 'Tracking dijeda karena alasan medis. Ikuti saran dokter Anda.',
+            default => 'Tracking dijeda. Catat menstruasi untuk melanjutkan tracking.',
+        };
+
+        return [
+            'title' => 'Tracking Siklus Dijeda',
+            'content' => $content,
+            'category' => 'info',
+            'priority' => 'low',
+        ];
     }
 }

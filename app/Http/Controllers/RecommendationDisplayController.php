@@ -24,7 +24,10 @@ class RecommendationDisplayController extends Controller
     {
         $user = $request->user();
 
-        $nextPrediction = $this->predictionService->getLatestPrediction($user->id);
+        // Ambil latest prediction dari database
+        $nextPrediction = \App\Models\PredictedCycle::where('user_id', $user->id)
+            ->latest('created_at')
+            ->first();
         
         $currentCycle = Cycle::where('user_id', $user->id)
             ->whereNull('end_date')
@@ -41,18 +44,18 @@ class RecommendationDisplayController extends Controller
             ? round($recentCycles->average('cycle_length')) : null;
 
         $topRecommendations = Recommendations::where('user_id', $user->id)
-            ->whereIn('priority', ['urgent', 'high'])
             ->orderByRaw("
                 CASE 
                     WHEN priority = 'urgent' THEN 1
                     WHEN priority = 'high' THEN 2
-                    ELSE 3
+                    WHEN priority = 'medium' THEN 3
+                    WHEN priority = 'low' THEN 4
+                    ELSE 5
                 END
             ")
             ->orderBy('created_at', 'desc')
             ->limit(2)
             ->get();
-
 
         $totalRecommendations = Recommendations::where('user_id', $user->id)->count();
 
@@ -65,22 +68,19 @@ class RecommendationDisplayController extends Controller
             'data' => [
                 'next_prediction' => $nextPrediction,
                 'current_cycle' => $currentCycle,
-                'ststistics' => [
+                'statistics' => [
                     'average_cycle_length' => $averageCycleLength,
                     'recent_cycles_count' => $recentCycles->count(),
                 ],
-
                 'recommendations' => [
                     'items' => $topRecommendations,
                     'total' => $totalRecommendations,
-                    'has_more' =>$totalRecommendations > 2,
+                    'has_more' => $totalRecommendations > 2,
                     'last_updated' => $lastRecommendation?->created_at,
                     'last_updated_human' => $lastRecommendation?->created_at?->diffForHumans(),
                 ],
             ],
-            
         ]);
-
     }
 
     public function allRecommendations(Request $request)
@@ -100,7 +100,6 @@ class RecommendationDisplayController extends Controller
             ->orderBy('created_at', 'desc')
             ->get();
 
-
         // Group by category
         $grouped = $recommendations->groupBy('category')->map(function($items, $category) {
             return [
@@ -119,7 +118,6 @@ class RecommendationDisplayController extends Controller
             ],
         ]);
     }
-
 
     public function refreshRecommendations(Request $request)
     {

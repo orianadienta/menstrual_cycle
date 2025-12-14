@@ -9,15 +9,11 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\Password;
-use Illuminate\Contracts\Auth\CanResetPassword;
-use Illuminate\Auth\Passwords\CanResetPassword as CanResetPasswordTrait;
+
 use App\Models\User;
 
 class AuthController extends Controller
 {
-    /** disini tambahin email verification
-     * Register a new account.
-     */
     public function register(Request $request)
     {
 
@@ -66,9 +62,7 @@ class AuthController extends Controller
         }
     }
 
-    /**
-     * Login and return auth token.
-     */
+  
     public function login(Request $request)
     {
         try {
@@ -118,52 +112,41 @@ class AuthController extends Controller
         }
     }
 
-    /**
-     * Get list of users (paginated) — protected route.
-     */
-    public function userInfo()
+    public function userInfo(Request $request)
     {
         try {
-            $users = User::latest()->paginate(10);
+            $user = $request->user(); // Ambil user yang sedang login
+
+            if (!$user) {
+                return response()->json([
+                    'response_code' => 401,
+                    'status'        => 'error',
+                    'message'       => 'User not authenticated',
+                ], 401);
+            }
 
             return response()->json([
-                'response_code'  => 200,
-                'status'         => 'success',
-                'message'        => 'Fetched user list successfully',
-                'data_user_list' => $users,
+                'response_code' => 200,
+                'status'        => 'success',
+                'message'       => 'Fetched user info successfully',
+                'data'          => [
+                    'id'    => $user->id,
+                    'name'  => $user->name,
+                    'email' => $user->email,
+                    'created_at' => $user->created_at,
+                ],
             ]);
         } catch (\Exception $e) {
-            Log::error('User List Error: ' . $e->getMessage());
+            Log::error('User Info Error: ' . $e->getMessage());
 
             return response()->json([
                 'response_code' => 500,
                 'status'        => 'error',
-                'message'       => 'Failed to fetch user list',
+                'message'       => 'Failed to fetch user info',
             ], 500);
         }
     }
 
-
-    // ini belum berfungsi
-    public function forgotPassword(Request $request)
-    {
-        $request -> validate(['email' => 'required|email']);
-
-        $status = Password::sendResetLink(
-            $request->only('email')
-        );
-
-        return response()->json([
-            'message'=>$status === Password::RESET_LINK_SENT
-                ? 'Reset link sent!'
-                : 'Unable to send reset link.',
-            'status'=>$status,
-        ], $status === Password::RESET_LINK_SENT ? 200 : 400);
-    }
-
-    /**
-     * Logout user and revoke tokens — protected route.
-     */
     public function logOut(Request $request)
     {
         try {
@@ -194,4 +177,25 @@ class AuthController extends Controller
             ], 500);
         }
     }
+
 }
+
+// use Illuminate\Contracts\Auth\CanResetPassword;
+// use Illuminate\Auth\Passwords\CanResetPassword as CanResetPasswordTrait;
+
+
+    // public function forgotPassword(Request $request)
+    // {
+    //     $request -> validate(['email' => 'required|email']);
+
+    //     $status = Password::sendResetLink(
+    //         $request->only('email')
+    //     );
+
+    //     return response()->json([
+    //         'message'=>$status === Password::RESET_LINK_SENT
+    //             ? 'Reset link sent!'
+    //             : 'Unable to send reset link.',
+    //         'status'=>$status,
+    //     ], $status === Password::RESET_LINK_SENT ? 200 : 400);
+    // }

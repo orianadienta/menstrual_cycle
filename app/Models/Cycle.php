@@ -23,7 +23,7 @@ class Cycle extends Model
     ];
 
     protected $hidden = [
-        'user', // Hide relationship saat serialize
+        'user', 
     ];
 
     public function user()
