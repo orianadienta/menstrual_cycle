@@ -12,8 +12,19 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->singleton(Messaging::class, function ($app) {
-            $path = storage_path('app/firebase_credentials.json');
-            $factory = (new Factory)->withServiceAccount($path);
+            $serviceAccount = [
+                'type' => 'service_account',
+                'project_id' => env('FIREBASE_PROJECT_ID'),
+                'client_email' => env('FIREBASE_CLIENT_EMAIL'),
+                'private_key' => str_replace(
+                    '\\n',
+                    "\n",
+                    env('FIREBASE_PRIVATE_KEY')
+                ),
+            ];
+
+            $factory = (new Factory)->withServiceAccount($serviceAccount);
+
             return $factory->createMessaging();
         });
     }
