@@ -28,8 +28,9 @@ return [
     ],
 
     'failed' => [
-        'driver' => env('QUEUE_FAILED_DRIVER', 'database'),
+        'driver' => env('QUEUE_FAILED_DRIVER', 'database-uuids'),
         'database' => env('DB_CONNECTION'),
         'table' => env('QUEUE_FAILED_TABLE', 'failed_jobs'),
     ],
+
 ];
