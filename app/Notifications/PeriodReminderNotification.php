@@ -8,6 +8,7 @@ use NotificationChannels\Fcm\FcmChannel;
 use NotificationChannels\Fcm\FcmMessage;
 use NotificationChannels\Fcm\Resources\Notification as FcmNotification;
 use Illuminate\Support\Facades\Log;
+use Throwable;
 
 class PeriodReminderNotification extends Notification implements ShouldQueue
 {
@@ -99,15 +100,14 @@ class PeriodReminderNotification extends Notification implements ShouldQueue
     /**
      * Handle notification failure
      */
-    public function failed($notifiable, $exception = null)
+    public function failed(Throwable $exception)
     {
         Log::error('Period reminder notification failed', [
-            'notification_class' => get_class($this),
-            'user_id' => $notifiable->id,
+            'notification_class' => static::class,
             'predicted_cycle_id' => optional($this->predictedCycle)->id,
-            'exception_class' => $exception ? get_class($exception) : 'null',
-            'exception_message' => $exception ? $exception->getMessage() : 'null',
-            'exception_code' => $exception ? $exception->getCode() : 'null',
+            'exception_class' => get_class($exception),
+            'exception_message' => $exception->getMessage(),
+            'exception_code' => $exception->getCode(),
         ]);
     }
 }
