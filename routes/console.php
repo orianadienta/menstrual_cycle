@@ -23,7 +23,7 @@ Artisan::command('inspire', function () {
  * 7. Send via FCM ke devices
  */
 Schedule::job(new SendPeriodReminderJob())
-    ->dailyAt('12:15')
+    ->dailyAt('12:45')
     ->timezone('Asia/Makassar')
     ->name('dispatch-period-reminder-job')
     ->onOneServer()
