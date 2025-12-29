@@ -5,11 +5,10 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Log;
 use App\Models\SymptomLog;
 use App\Models\Symptom;
-use App\Http\Controllers\Controller;
 use App\Services\RecommendationService;
-use Illuminate\Support\Facades\Log;
 
 class SymptomLogController extends Controller
 {
@@ -20,6 +19,9 @@ class SymptomLogController extends Controller
         $this->recommendationService = $recommendationService;
     }
 
+    /* =====================================================
+     | GET ALL SYMPTOMS
+     ===================================================== */
     public function getSymptoms()
     {
         $symptoms = Symptom::with('category')
@@ -40,6 +42,54 @@ class SymptomLogController extends Controller
         return response()->json($symptoms);
     }
 
+    /* =====================================================
+     | GET SYMPTOM LOG FOR SPECIFIC DATE
+     | GET /api/symptom-logs/show?log_date=YYYY-MM-DD
+     ===================================================== */
+    public function show(Request $request)
+    {
+        try {
+            $validated = $request->validate([
+                'log_date' => 'required|date',
+            ]);
+
+            $user = $request->user();
+            $logDate = $validated['log_date'];
+
+            $symptomLogs = SymptomLog::with('symptom.category')
+                ->where('user_id', $user->id)
+                ->where('log_date', $logDate)
+                ->get();
+
+            $result = $symptomLogs->map(function ($log) {
+                return [
+                    'id' => $log->id,
+                    'symptom_id' => $log->symptom_id,
+                    'symptom_name' => $log->symptom->symptom_name,
+                    'category_name' => $log->symptom->category->category_name,
+                    'category_id' => $log->symptom->category->id,
+                    'log_date' => $log->log_date,
+                ];
+            });
+
+            return response()->json([
+                'success' => true,
+                'data' => $result,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error in show symptom log: ' . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+                'data' => [],
+            ], 500);
+        }
+    }
+
+    /* =====================================================
+     | STORE / UPDATE DAILY LOG (SAFE MERGE)
+     ===================================================== */
     public function storeLog(Request $request)
     {
         $validated = $request->validate([
@@ -49,38 +99,35 @@ class SymptomLogController extends Controller
         ]);
 
         $user = $request->user();
+        $newIds = $validated['symptom_ids'] ?? [];
 
-        // Validasi single selection untuk Mood & Sleep Quality
-        if (!empty($validated['symptom_ids'])) {
+        /* ---------- VALIDATION (BEFORE DB) ---------- */
+        if (!empty($newIds)) {
             $symptoms = Symptom::with('category')
-                ->whereIn('id', $validated['symptom_ids'])
+                ->whereIn('id', $newIds)
                 ->get();
 
             $categoryCount = [];
             $painSymptoms = [];
-            
+
             foreach ($symptoms as $symptom) {
-                $categoryName = $symptom->category->category_name;
-                $categoryCount[$categoryName] = ($categoryCount[$categoryName] ?? 0) + 1;
-                
-                // Collect pain symptoms
-                if ($categoryName === 'Pain') {
+                $category = $symptom->category->category_name;
+                $categoryCount[$category] = ($categoryCount[$category] ?? 0) + 1;
+
+                if ($category === 'Pain') {
                     $painSymptoms[] = $symptom->symptom_name;
                 }
             }
 
-            // Cek jika Mood atau Sleep Quality lebih dari 1
-            $singleCategories = ['Mood', 'Sleep Quality'];
-            foreach ($singleCategories as $category) {
-                if (isset($categoryCount[$category]) && $categoryCount[$category] > 1) {
+            foreach (['Mood', 'Sleep Quality'] as $cat) {
+                if (($categoryCount[$cat] ?? 0) > 1) {
                     return response()->json([
                         'success' => false,
-                        'message' => "You can only select one {$category} symptom",
+                        'message' => "You can only select one {$cat} symptom",
                     ], 422);
                 }
             }
-            
-            // Validasi khusus Pain: "No pain" tidak boleh dengan pain lainnya
+
             if (in_array('No pain', $painSymptoms) && count($painSymptoms) > 1) {
                 return response()->json([
                     'success' => false,
@@ -89,24 +136,34 @@ class SymptomLogController extends Controller
             }
         }
 
-        DB::transaction(function () use ($validated, $user) {
+        /* ---------- SAFE MERGE UPDATE ---------- */
+        DB::transaction(function () use ($user, $validated, $newIds) {
+
+            $existingIds = SymptomLog::where('user_id', $user->id)
+                ->where('log_date', $validated['log_date'])
+                ->pluck('symptom_id')
+                ->toArray();
+
+            // Gabungkan data lama + baru
+            $finalIds = array_unique(array_merge($existingIds, $newIds));
+
+            // Hapus hanya yang benar-benar tidak ada
             SymptomLog::where('user_id', $user->id)
                 ->where('log_date', $validated['log_date'])
+                ->whereNotIn('symptom_id', $finalIds)
                 ->delete();
 
-            if (!empty($validated['symptom_ids'])) {
-                foreach ($validated['symptom_ids'] as $symptomId) {
-                    SymptomLog::create([
-                        'user_id' => $user->id,
-                        'symptom_id' => $symptomId,
-                        'log_date' => $validated['log_date'],
-                    ]);
-                }
+            // Insert yang belum ada
+            foreach (array_diff($finalIds, $existingIds) as $id) {
+                SymptomLog::create([
+                    'user_id' => $user->id,
+                    'symptom_id' => $id,
+                    'log_date' => $validated['log_date'],
+                ]);
             }
         });
 
         $this->recommendationService->clearCache($user->id);
-        $recommendations = $this->recommendationService->generateRecommendations($user->id);
 
         return response()->json([
             'success' => true,
@@ -114,7 +171,10 @@ class SymptomLogController extends Controller
         ]);
     }
 
-    // GET /api/symptom-logs/calendar?month=YYYY-MM
+    /* =====================================================
+     | CALENDAR VIEW
+     | GET /api/symptom-logs/calendar?month=YYYY-MM
+     ===================================================== */
     public function getCalendarSymptoms(Request $request)
     {
         try {
@@ -125,75 +185,61 @@ class SymptomLogController extends Controller
             $user = $request->user();
             $month = $validated['month'];
 
-            Log::info("=== getCalendarSymptoms START ===");
-            Log::info("User ID: {$user->id}");
-            Log::info("Month: {$month}");
+            $firstDay = Carbon::createFromFormat('Y-m', $month)
+                ->startOfMonth()
+                ->toDateString();
 
-            $firstDay = Carbon::createFromFormat('Y-m', $month)->startOfMonth()->toDateString();
-            $lastDay = Carbon::createFromFormat('Y-m', $month)->endOfMonth()->toDateString();
-
-            Log::info("Date range: {$firstDay} to {$lastDay}");
+            $lastDay = Carbon::createFromFormat('Y-m', $month)
+                ->endOfMonth()
+                ->toDateString();
 
             $symptomLogs = SymptomLog::with('symptom.category')
                 ->where('user_id', $user->id)
-                ->whereDate('log_date', '>=', $firstDay)
-                ->whereDate('log_date', '<=', $lastDay)
+                ->whereBetween('log_date', [$firstDay, $lastDay])
                 ->orderBy('log_date', 'desc')
                 ->get();
 
-            Log::info("Found logs count: " . $symptomLogs->count());
-
-            $result = $symptomLogs->groupBy(function ($log) {
-                // Jika log_date adalah string, convert ke Carbon
-                $date = is_string($log->log_date) 
-                    ? Carbon::parse($log->log_date) 
-                    : $log->log_date;
-                
-                return $date->format('Y-m-d');
-            })
-            ->map(function ($dayLogs, $date) {
-                return [
-                    'date' => $date,
-                    'symptoms' => $dayLogs->map(function ($log) {
-                        return [
-                            'id' => $log->id,
-                            'symptom_id' => $log->symptom_id,
-                            'symptom_name' => $log->symptom->symptom_name,
-                            'category_name' => $log->symptom->category->category_name,
-                            'category_id' => $log->symptom->category->id,
-                        ];
-                    })->values()->all(),
-                ];
-            })
-            ->values()
-            ->all();
-
-            Log::info("=== getCalendarSymptoms SUCCESS ===");
+            $result = $symptomLogs
+                ->groupBy(fn ($log) => Carbon::parse($log->log_date)->format('Y-m-d'))
+                ->map(function ($dayLogs, $date) {
+                    return [
+                        'date' => $date,
+                        'symptoms' => $dayLogs->map(function ($log) {
+                            return [
+                                'id' => $log->id,
+                                'symptom_id' => $log->symptom_id,
+                                'symptom_name' => $log->symptom->symptom_name,
+                                'category_name' => $log->symptom->category->category_name,
+                                'category_id' => $log->symptom->category->id,
+                            ];
+                        })->values(),
+                    ];
+                })
+                ->values();
 
             return response()->json([
                 'success' => true,
                 'data' => $result,
             ]);
         } catch (\Exception $e) {
-            Log::error("=== getCalendarSymptoms ERROR ===");
-            Log::error($e->getMessage());
-            Log::error($e->getTraceAsString());
-            
+            Log::error($e);
+
             return response()->json([
                 'success' => false,
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
             ], 500);
         }
     }
 
-
+    /* =====================================================
+     | HISTORY (LAST 6 MONTHS)
+     ===================================================== */
     public function getSymptomHistory(Request $request)
     {
         $user = $request->user();
         $sixMonthsAgo = Carbon::now()->subMonths(6);
 
-        $symptoms = SymptomLog::with(['symptom.category'])
+        $symptoms = SymptomLog::with('symptom.category')
             ->where('user_id', $user->id)
             ->where('log_date', '>=', $sixMonthsAgo)
             ->orderBy('log_date', 'desc')
@@ -206,27 +252,28 @@ class SymptomLogController extends Controller
             ]);
         }
 
-        $history = $symptoms->groupBy(function ($symptom) {
-            return Carbon::parse($symptom->log_date)->locale('id')->isoFormat('MMMM YYYY');
-        })->map(function ($monthSymptoms, $month) {
-            $uniqueSymptoms = $monthSymptoms
-                ->map(function ($log) {
-                    return [
-                        'symptom_name' => $log->symptom ? $log->symptom->symptom_name : null,
-                        'category_name' => $log->symptom ? $log->symptom->category->category_name : null,
-                    ];
-                })
-                ->filter(fn ($item) => $item['symptom_name'] !== null)
-                ->unique(fn ($item) => $item['symptom_name'])
-                ->values()
-                ->all();
+        $history = $symptoms
+            ->groupBy(fn ($log) =>
+                Carbon::parse($log->log_date)->locale('id')->isoFormat('MMMM YYYY')
+            )
+            ->map(function ($monthSymptoms, $month) {
+                $unique = $monthSymptoms
+                    ->map(function ($log) {
+                        return [
+                            'symptom_name' => $log->symptom->symptom_name,
+                            'category_name' => $log->symptom->category->category_name,
+                        ];
+                    })
+                    ->unique('symptom_name')
+                    ->values();
 
-            return [
-                'month' => $month,
-                'symptoms' => $uniqueSymptoms,
-                'total_symptoms' => count($uniqueSymptoms),
-            ];
-        })->values()->all();
+                return [
+                    'month' => $month,
+                    'symptoms' => $unique,
+                    'total_symptoms' => $unique->count(),
+                ];
+            })
+            ->values();
 
         return response()->json([
             'message' => 'Riwayat gejala berhasil diambil',
