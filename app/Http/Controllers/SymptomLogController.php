@@ -50,6 +50,45 @@ class SymptomLogController extends Controller
 
         $user = $request->user();
 
+        // Validasi single selection untuk Mood & Sleep Quality
+        if (!empty($validated['symptom_ids'])) {
+            $symptoms = Symptom::with('category')
+                ->whereIn('id', $validated['symptom_ids'])
+                ->get();
+
+            $categoryCount = [];
+            $painSymptoms = [];
+            
+            foreach ($symptoms as $symptom) {
+                $categoryName = $symptom->category->category_name;
+                $categoryCount[$categoryName] = ($categoryCount[$categoryName] ?? 0) + 1;
+                
+                // Collect pain symptoms
+                if ($categoryName === 'Pain') {
+                    $painSymptoms[] = $symptom->symptom_name;
+                }
+            }
+
+            // Cek jika Mood atau Sleep Quality lebih dari 1
+            $singleCategories = ['Mood', 'Sleep Quality'];
+            foreach ($singleCategories as $category) {
+                if (isset($categoryCount[$category]) && $categoryCount[$category] > 1) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => "You can only select one {$category} symptom",
+                    ], 422);
+                }
+            }
+            
+            // Validasi khusus Pain: "No pain" tidak boleh dengan pain lainnya
+            if (in_array('No pain', $painSymptoms) && count($painSymptoms) > 1) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'You cannot select "No pain" with other pain symptoms',
+                ], 422);
+            }
+        }
+
         DB::transaction(function () use ($validated, $user) {
             SymptomLog::where('user_id', $user->id)
                 ->where('log_date', $validated['log_date'])
@@ -72,33 +111,6 @@ class SymptomLogController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Log saved successfully',
-        ]);
-    }
-
-    public function show(Request $request)
-    {
-        $request->validate([
-            'log_date' => 'required|date|before_or_equal:today',
-        ]);
-
-        $logs = SymptomLog::with('symptom')
-            ->where('user_id', $request->user()->id)
-            ->whereDate('log_date', $request->query('log_date'))
-            ->get()
-            ->map(function ($log) {
-                return [
-                    'id' => $log->id,
-                    'symptom_id' => $log->symptom_id,
-                    'symptom_name' => $log->symptom->symptom_name,
-                    'category_name' => $log->symptom->category->category_name,
-                    'category_id' => $log->symptom->category->id,
-                    'log_date' => $log->log_date,
-                ];
-            });
-
-        return response()->json([
-            'success' => true,
-            'data' => $logs,
         ]);
     }
 

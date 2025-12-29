@@ -18,6 +18,8 @@ use Illuminate\Http\Request;
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login'])->name('login');
 
+Route::post('/auth/google/mobile', [AuthController::class, 'googleAuthMobile']);
+
 // ========== PROTECTED ROUTES (WITH AUTH) ==========
 Route::middleware('auth:sanctum')->group(function () {
     
@@ -35,6 +37,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::prefix('cycles')->group(function () {
         Route::get('/', [CycleController::class, 'index']); // List all cycles
         Route::post('/mark-period', [CycleController::class, 'markPeriod']); 
+        Route::delete('/{cycle}', [CycleController::class, 'destroy']);
         Route::put('/{cycle}/update-mark', [CycleController::class, 'updateMarkPeriod']); 
         Route::get('/history', [CycleController::class, 'getCycleHistory']); 
     });
@@ -83,11 +86,8 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // ===== NOTIFICATION ENDPOINTS =====
     Route::prefix('notification')->group(function () {
-        // Register device token
         Route::post('/register-device', [NotificationController::class, 'registerDevice']);
-        // Unregister device token
         Route::delete('/unregister-device', [NotificationController::class, 'unregisterDevice']);
-        // Get all registered devices
         Route::get('/devices', [NotificationController::class, 'getDevices']);
     });
     
