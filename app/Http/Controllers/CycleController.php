@@ -54,6 +54,18 @@ class CycleController extends Controller
 
         $duration = $startDate->diffInDays($endDate) + 1;
 
+        $previousCycle = Cycle::where('user_id', $user->id)
+            ->where('end_date', '<', $startDate)
+            ->whereNotNull('end_date')
+            ->orderBy('end_date', 'desc')
+            ->first();
+
+        $cycleLength = null;
+        if ($previousCycle) {
+            $cycleLength = Carbon::parse($previousCycle->end_date)
+                ->diffInDays($startDate) + 1;
+        }
+
         // Log unusual patterns for medical analysis (tidak reject)
         $this->logUnusualPattern($user->id, $startDate, $endDate, $duration);
 
@@ -63,6 +75,7 @@ class CycleController extends Controller
             'start_date' => $startDate,
             'end_date' => $endDate,
             'period_duration' => $duration,
+            'cycle_length' => $cycleLength,
         ]);
 
         // Generate prediction & recommendations
@@ -102,6 +115,19 @@ class CycleController extends Controller
 
         $duration = $startDate->diffInDays($endDate) + 1;
 
+        $previousCycle = Cycle::where('user_id', $cycle->user_id)
+            ->where('id', '!=', $cycle->id)  // Exclude current cycle
+            ->where('end_date', '<', $startDate)
+            ->whereNotNull('end_date')
+            ->orderBy('end_date', 'desc')
+            ->first();
+
+        $cycleLength = null;
+        if ($previousCycle) {
+            $cycleLength = Carbon::parse($previousCycle->end_date)
+                ->diffInDays($startDate) + 1;
+        }
+
         // Log unusual patterns for medical analysis (tidak reject)
         $this->logUnusualPattern($cycle->user_id, $startDate, $endDate, $duration);
 
@@ -109,6 +135,7 @@ class CycleController extends Controller
             'start_date' => $startDate,
             'end_date' => $endDate,
             'period_duration' => $duration,
+            'cycle_length' => $cycleLength,
         ]);
 
         // Generate prediction & recommendations
