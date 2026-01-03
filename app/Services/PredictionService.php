@@ -18,7 +18,7 @@ class PredictionService
 
     public function generatePrediction($userId)
     {
-        Log::info('🔍 Starting prediction generation', ['user_id' => $userId]);
+        Log::info('Starting prediction generation', ['user_id' => $userId]);
 
         $trackingStatus = TrackingStatus::where('user_id', $userId)->latest()->first();
 
@@ -27,6 +27,11 @@ class PredictionService
             Log::info('User paused, predictions deleted', ['user_id' => $userId]);
             return null;
         }
+
+        // hapus prediksi lama sebelum generate yang baru
+        PredictedCycle::where('user_id', $userId)->delete();
+        Log::info('Old predictions deleted before generating new one', ['user_id' => $userId]);
+
 
         $query = Cycle::where('user_id', $userId)
             ->whereNotNull('end_date')
